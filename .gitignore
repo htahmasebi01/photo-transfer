@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Xcode
+mac/*.xcodeproj
+mac/build/
+mac/DerivedData/
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/**/build/
+android/local.properties
+android/.kotlin/
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.vscode/

@@ -13,6 +13,7 @@ xcuserdata/
 
 # Android / Gradle
 android/.gradle/
+android/**/.gradle/
 android/build/
 android/**/build/
 android/local.properties

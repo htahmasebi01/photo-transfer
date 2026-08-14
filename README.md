@@ -6,7 +6,7 @@ Two apps in one monorepo:
 
 | Directory | App | Stack |
 |---|---|---|
-| `android/` | Sender | Kotlin, Jetpack Compose, Photo Picker, NsdManager, OkHttp |
+| `android/` | Sender | Kotlin, Jetpack Compose, Hilt, Photo Picker, NsdManager, OkHttp |
 | `mac/` | Receiver (PhotoReceiver) | SwiftUI, FlyingFox HTTP server, Bonjour (Network.framework) |
 
 ## How it works
@@ -16,7 +16,9 @@ Two apps in one monorepo:
 3. You pick photos with the system Photo Picker.
 4. Photos stream over HTTP to the Mac, which writes them to a temp file and atomically moves them into your chosen destination folder.
 
-See [docs/protocol.md](docs/protocol.md) for the wire protocol.
+See [docs/protocol.md](docs/protocol.md) for the wire protocol and
+[docs/android-architecture.md](docs/android-architecture.md) for the Android
+module graph and layering rules.
 
 ## Current scope (walking skeleton)
 

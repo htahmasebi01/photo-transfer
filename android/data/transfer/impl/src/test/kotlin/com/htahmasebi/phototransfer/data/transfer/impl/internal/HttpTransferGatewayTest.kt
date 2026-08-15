@@ -1,7 +1,7 @@
 package com.htahmasebi.phototransfer.data.transfer.impl.internal
 
 import android.net.Uri
-import com.htahmasebi.phototransfer.core.coroutines.DispatcherProvider
+import com.htahmasebi.phototransfer.core.coroutines.dispatchers.Dispatchers
 import com.htahmasebi.phototransfer.core.model.ReceiverDevice
 import com.htahmasebi.phototransfer.core.model.SelectedFile
 import com.htahmasebi.phototransfer.data.media.MediaByteSource
@@ -10,7 +10,6 @@ import com.htahmasebi.phototransfer.data.transfer.impl.internal.protocol.Transfe
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -44,7 +43,9 @@ class HttpTransferGatewayTest {
             httpClient = OkHttpClient(),
             json = json,
             byteSource = FakeMediaByteSource(PHOTO_BYTES),
-            dispatchers = TestDispatcherProvider(),
+            dispatchers = UnconfinedTestDispatcher().let {
+                Dispatchers(main = it, io = it, default = it)
+            },
         )
     }
 
@@ -138,11 +139,6 @@ class HttpTransferGatewayTest {
 
     private class FakeMediaByteSource(private val bytes: ByteArray) : MediaByteSource {
         override fun openStream(uri: Uri): InputStream = ByteArrayInputStream(bytes)
-    }
-
-    private class TestDispatcherProvider : DispatcherProvider {
-        override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
     }
 
     private companion object {

@@ -1,6 +1,6 @@
 package com.htahmasebi.phototransfer.data.transfer.impl.internal
 
-import com.htahmasebi.phototransfer.core.coroutines.DispatcherProvider
+import com.htahmasebi.phototransfer.core.coroutines.dispatchers.Dispatchers
 import com.htahmasebi.phototransfer.core.model.ReceiverDevice
 import com.htahmasebi.phototransfer.core.model.SelectedFile
 import com.htahmasebi.phototransfer.data.media.MediaByteSource
@@ -29,7 +29,7 @@ internal class HttpTransferGateway @Inject constructor(
     private val httpClient: OkHttpClient,
     private val json: Json,
     private val byteSource: MediaByteSource,
-    private val dispatchers: DispatcherProvider,
+    private val dispatchers: Dispatchers,
 ) : TransferGateway {
 
     override suspend fun fetchReceiverInfo(receiver: ReceiverDevice): ReceiverInfo {

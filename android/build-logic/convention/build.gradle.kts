@@ -38,9 +38,17 @@ gradlePlugin {
             id = "phototransfer.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
         }
-        register("hilt") {
-            id = "phototransfer.hilt"
-            implementationClass = "HiltConventionPlugin"
+        register("androidHilt") {
+            id = "phototransfer.android.hilt"
+            implementationClass = "AndroidHiltConventionPlugin"
+        }
+        register("jvmLibrary") {
+            id = "phototransfer.jvm.library"
+            implementationClass = "JvmLibraryConventionPlugin"
+        }
+        register("jvmHilt") {
+            id = "phototransfer.jvm.hilt"
+            implementationClass = "JvmHiltConventionPlugin"
         }
     }
 }

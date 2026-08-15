@@ -1,10 +1,9 @@
 package com.htahmasebi.phototransfer.domain.media.impl.internal
 
 import android.net.Uri
-import com.htahmasebi.phototransfer.core.coroutines.DispatcherProvider
+import com.htahmasebi.phototransfer.core.coroutines.dispatchers.Dispatchers
 import com.htahmasebi.phototransfer.core.model.SelectedFile
 import com.htahmasebi.phototransfer.data.media.MediaMetadataSource
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -28,7 +27,7 @@ class DefaultResolveSelectedPhotosTest {
 
     private val resolveSelectedPhotos = DefaultResolveSelectedPhotos(
         metadataSource = metadataSource,
-        dispatchers = TestDispatcherProvider(),
+        dispatchers = UnconfinedTestDispatcher().let { Dispatchers(main = it, io = it, default = it) },
     )
 
     @Test
@@ -57,9 +56,4 @@ class DefaultResolveSelectedPhotosTest {
         mediaType = "image/jpeg",
         size = 1L,
     )
-
-    private class TestDispatcherProvider : DispatcherProvider {
-        override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
-    }
 }

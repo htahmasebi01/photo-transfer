@@ -1,7 +1,7 @@
 plugins {
     id("phototransfer.android.library")
     id("phototransfer.android.compose")
-    id("phototransfer.hilt")
+    id("phototransfer.android.hilt")
 }
 
 android {

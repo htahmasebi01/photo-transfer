@@ -1,7 +1,8 @@
 # Android module architecture
 
-The sender is a multi-module Gradle build. Every module is an Android library
-except `:app`, which is the application and the only composition root.
+The sender is a multi-module Gradle build. `:app` is the application and the only
+composition root. `:core:coroutines` is a plain JVM library because it touches no
+Android API; every other module is an Android library.
 
 ## Module graph
 
@@ -50,7 +51,7 @@ except `:app`, which is the application and the only composition root.
 | `:data:media:api` | `MediaMetadataSource`, `MediaByteSource` |
 | `:data:media:impl` | `ContentResolver`-backed metadata and byte access |
 | `:core:model` | `ReceiverDevice`, `SelectedFile` |
-| `:core:coroutines` | `DispatcherProvider` |
+| `:core:coroutines` | `Dispatchers`, `@ApplicationScope` |
 
 ## Rules
 
@@ -58,7 +59,8 @@ except `:app`, which is the application and the only composition root.
    adds every `impl` so the runtime graph is complete.
 2. **`api` modules hold contracts only:** interfaces, sealed states, value types.
    No Hilt, no frameworks, no SDK types in public signatures.
-3. **Hilt lives in `impl`.** `@Module`, `@Binds`, and `@Provides` appear only in
+3. **Hilt lives in `integration` packages.** `@Module`, `@Binds`, and `@Provides`
+   appear only in `.../integration/`, which for every layered module means
    `<module>/impl/.../integration/`. Consumers use constructor injection and
    never see a Hilt module. `@HiltViewModel` in `:feature:transfer` is a
    consumer annotation, not wiring.
@@ -76,6 +78,19 @@ OkHttp, `NsdManager`, or `ContentResolver` anywhere on its classpath. Swapping
 plain HTTP for TLS, or `NsdManager` for another discovery mechanism, is a new
 `impl` and one changed line in `:app`.
 
+## Coroutines
+
+`:core:coroutines` owns two contracts:
+
+- **`Dispatchers`**, a value type holding `main`, `io`, and `default`. Classes
+  inject it rather than referencing `kotlinx.coroutines.Dispatchers`, so a test
+  passes `Dispatchers(main = testDispatcher, io = testDispatcher, ...)` and needs
+  no dispatcher rule.
+- **`@ApplicationScope`**, qualifying a singleton `CoroutineScope` backed by a
+  `SupervisorJob`. Work that must outlive the screen that started it takes this
+  scope: `DefaultTransferCoordinator` uses it so a transfer keeps running across
+  configuration changes and navigation.
+
 ## Build logic
 
 Shared Gradle configuration lives in `android/build-logic` as convention plugins:
@@ -85,9 +100,13 @@ Shared Gradle configuration lives in `android/build-logic` as convention plugins
 | `phototransfer.android.application` | AGP application, SDK levels, Java/Kotlin 17 |
 | `phototransfer.android.library` | AGP library, SDK levels, Java/Kotlin 17, unit test deps |
 | `phototransfer.android.compose` | Compose compiler, Compose BOM |
-| `phototransfer.hilt` | KSP, Hilt plugin, Hilt runtime and compiler |
+| `phototransfer.android.hilt` | KSP, Hilt Android plugin, `hilt-android` and its compiler |
+| `phototransfer.jvm.library` | Kotlin JVM, Java/Kotlin 17, unit test deps |
+| `phototransfer.jvm.hilt` | KSP, `hilt-core` and `hilt-compiler` |
 
 AGP 9 provides Kotlin support directly, so no Kotlin Android plugin is applied.
+JVM modules only declare bindings, so they skip the Hilt Android plugin (which
+exists for the `@AndroidEntryPoint` bytecode transform) and use `hilt-core`.
 
 ## Tests
 

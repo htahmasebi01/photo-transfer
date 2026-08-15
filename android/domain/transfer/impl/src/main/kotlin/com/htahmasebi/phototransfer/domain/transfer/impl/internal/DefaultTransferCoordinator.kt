@@ -1,5 +1,6 @@
 package com.htahmasebi.phototransfer.domain.transfer.impl.internal
 
+import com.htahmasebi.phototransfer.core.coroutines.scopes.ApplicationScope
 import com.htahmasebi.phototransfer.core.model.ReceiverDevice
 import com.htahmasebi.phototransfer.core.model.SelectedFile
 import com.htahmasebi.phototransfer.data.transfer.TransferGateway
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
  */
 internal class DefaultTransferCoordinator @Inject constructor(
     private val gateway: TransferGateway,
-    private val scope: CoroutineScope,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : TransferCoordinator {
 
     private val _state = MutableStateFlow<TransferState>(TransferState.Idle)

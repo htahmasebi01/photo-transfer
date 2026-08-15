@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:pivotX="35"
+        android:pivotY="53"
+        android:rotation="-8">
+
+        <path
+            android:pathData="M29,43 L41,43 A4,4 0 0 1 45,47 L45,59 A4,4 0 0 1 41,63 L29,63 A4,4 0 0 1 25,59 L25,47 A4,4 0 0 1 29,43 Z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:strokeLineJoin="round" />
+
+        <group>
+            <!-- Tighter than the colour layer's clip: with a single tint the mountain would
+                 otherwise fuse with the frame and erase its bottom edge. The sun is dropped
+                 for the same reason, since it lands on the right-hand peak once inset. -->
+            <clip-path android:pathData="M31,47 L39,47 A2,2 0 0 1 41,49 L41,57 A2,2 0 0 1 39,59 L31,59 A2,2 0 0 1 29,57 L29,49 A2,2 0 0 1 31,47 Z" />
+
+            <path
+                android:pathData="M27,61 L33.5,49.5 L37,54.5 L39.5,51.5 L43,61 Z"
+                android:fillColor="#FFFFFF" />
+        </group>
+    </group>
+
+    <path
+        android:pathData="M52,46.5 L59,53 L52,59.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <path
+        android:pathData="M68,43.5 L78,43.5 A2,2 0 0 1 80,45.5 L80,54.5 A2,2 0 0 1 78,56.5 L68,56.5 A2,2 0 0 1 66,54.5 L66,45.5 A2,2 0 0 1 68,43.5 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round" />
+
+    <path
+        android:pathData="M63,62 L84,62"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+</vector>

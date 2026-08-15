@@ -44,6 +44,24 @@ In the app:
 1. Click "Choose Folder" and pick a destination folder.
 2. Click "Start Receiving". The window shows the advertised name and port.
 
+Note that `swift run` launches a bare executable with no app bundle, so the Dock shows a
+generic icon. The artwork is ready in `Resources/`; it starts being used once the app is
+packaged into a `.app`.
+
+## Icons
+
+| App | Asset | Notes |
+|---|---|---|
+| Android | `android/app/src/main/res/drawable/ic_launcher_*.xml` | Adaptive icon, vector only. `minSdk` is 29, so no PNG density buckets are needed. Includes a monochrome layer for Android 13 themed icons. |
+| macOS | `MacPhotoTransferPro/Resources/AppIcon.icns` | Built from `AppIcon.png`, the 1024x1024 master. |
+
+Regenerate the macOS icon from a square source render:
+
+```bash
+cd MacPhotoTransferPro
+swift Tools/make-appicon.swift path/to/render.png Resources
+```
+
 ## Running the Android sender
 
 Requirements: JDK 17+, Android SDK, a device or emulator on the same Wi-Fi as the Mac.

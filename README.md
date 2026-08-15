@@ -7,7 +7,7 @@ Two apps in one monorepo:
 | Directory | App | Stack |
 |---|---|---|
 | `android/` | Sender | Kotlin, Jetpack Compose, Hilt, Photo Picker, NsdManager, OkHttp |
-| `mac/` | Receiver (PhotoReceiver) | SwiftUI, FlyingFox HTTP server, Bonjour (Network.framework) |
+| `MacPhotoTransferPro/` | Receiver | SwiftUI, FlyingFox HTTP server, Bonjour (Network.framework) |
 
 ## How it works
 
@@ -34,9 +34,9 @@ Not yet implemented: QR pairing, TLS, checksums, resumable uploads, foreground s
 Requirements: macOS with Xcode 26+. The Mac app is a Swift package.
 
 ```bash
-cd mac
-swift run PhotoReceiver
-# or: open Package.swift in Xcode and run the PhotoReceiver scheme
+cd MacPhotoTransferPro
+swift run MacPhotoTransferPro
+# or: open Package.swift in Xcode and run the MacPhotoTransferPro scheme
 ```
 
 In the app:
@@ -74,5 +74,5 @@ In the app:
 cd android && ./gradlew test
 
 # Mac unit tests
-cd mac && swift test
+cd MacPhotoTransferPro && swift test
 ```

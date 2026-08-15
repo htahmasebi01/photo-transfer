@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.htahmasebi.phototransfer"
+    namespace = "com.agiletech.android.phototransfer"
 
     defaultConfig {
-        applicationId = "com.htahmasebi.phototransfer"
+        applicationId = "com.agiletech.android.phototransfer"
         versionCode = 1
         versionName = "0.1.0"
     }

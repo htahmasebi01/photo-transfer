@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.htahmasebi.phototransfer.domain.discovery"
+    namespace = "com.agiletech.android.phototransfer.domain.discovery"
 }
 
 dependencies {

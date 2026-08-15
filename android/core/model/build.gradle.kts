@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.htahmasebi.phototransfer.core.model"
+    namespace = "com.agiletech.android.phototransfer.core.model"
 }

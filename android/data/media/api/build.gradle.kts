@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.htahmasebi.phototransfer.data.media"
+    namespace = "com.agiletech.android.phototransfer.data.media"
 }
 
 dependencies {

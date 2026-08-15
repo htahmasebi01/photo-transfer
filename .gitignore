@@ -2,9 +2,9 @@
 .DS_Store
 
 # Xcode
-mac/*.xcodeproj
-mac/build/
-mac/DerivedData/
+MacPhotoTransferPro/*.xcodeproj
+MacPhotoTransferPro/build/
+MacPhotoTransferPro/DerivedData/
 xcuserdata/
 
 # Swift Package Manager

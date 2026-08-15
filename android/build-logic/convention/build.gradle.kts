@@ -4,7 +4,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.htahmasebi.phototransfer.buildlogic"
+group = "com.agiletech.android.phototransfer.buildlogic"
 
 kotlin {
     compilerOptions {

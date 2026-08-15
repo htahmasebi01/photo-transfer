@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.htahmasebi.phototransfer.feature.transfer"
+    namespace = "com.agiletech.android.phototransfer.feature.transfer"
 }
 
 dependencies {

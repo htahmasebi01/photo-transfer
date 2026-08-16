@@ -176,6 +176,14 @@ and can produce proofs of their own.
 | Filename | image extensions only | The app is not sandboxed. If the destination is the home folder, an unrestricted write is code execution on the next shell. Dotfiles, extensionless names, and anything ending in a non-image extension are refused with `415`. |
 | Pairing attempts | 5 per source, 30 per minute overall, 1 s apart | Guessing has to be bounded, but an attempt cap that voids the code hands anyone on the network a way to stop the user pairing at all. Exhausted limits are refused with `429` and the code stays valid; the overall cap slides over a minute so it recovers on its own. |
 
+## Redirects
+
+There are none. A sender must not follow `3xx`, because a redirect is a receiver-controlled
+way to have the photo body re-sent somewhere else, and a client that restricts itself to the
+local network usually applies that restriction once per call rather than per hop. The Android
+sender disables redirect following outright, and also judges every hop against the local-only
+rule so the restriction survives if that setting is ever changed.
+
 ## Endpoints
 
 ### GET /v1/info

@@ -12,7 +12,7 @@ import org.amshove.kluent.`should be true`
 import org.amshove.kluent.`should not be equal to`
 import org.junit.Test
 
-class HmacRequestSignerTest {
+internal class HmacRequestSignerTest {
 
     val store = FakePairingLocalStore()
 

@@ -5,8 +5,9 @@ import java.net.UnknownHostException
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Dns
-import okhttp3.OkHttpClient
+import okhttp3.Headers.Companion.headersOf
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.amshove.kluent.invoking
 import org.amshove.kluent.`should be equal to`
 import org.amshove.kluent.`should be false`
@@ -53,9 +54,9 @@ class LocalAddressesTest {
     }
 }
 
-class LocalNetworkOnlyDnsTest {
+internal class LocalNetworkOnlyDnsTest {
 
-    internal val tested = LocalNetworkOnlyDns()
+    val tested = LocalNetworkOnlyDns()
 
     /**
      * A hostname resolving to a mix keeps only what is local, so the connection cannot leave
@@ -96,14 +97,15 @@ class LocalNetworkOnlyDnsTest {
     }
 }
 
-class LocalNetworkOnlyInterceptorTest {
+/**
+ * Exercises the client the app actually builds, because the local-network rule depends on
+ * how the guards are installed as much as on what they check.
+ */
+internal class LocalReceiverHttpClientTest {
 
     val server = MockWebServer()
 
-    val client = OkHttpClient.Builder()
-        .dns(LocalNetworkOnlyDns())
-        .addInterceptor(LocalNetworkOnlyInterceptor())
-        .build()
+    val tested = LocalReceiverHttpClient.create()
 
     @Before
     fun setUp() {
@@ -121,7 +123,7 @@ class LocalNetworkOnlyInterceptorTest {
         server.enqueue(MockResponse(code = 204))
 
         // when
-        val response = client.newCall(Request.Builder().url(server.url("/v1/info")).build())
+        val response = tested.newCall(Request.Builder().url(server.url("/v1/info")).build())
             .execute()
 
         // then
@@ -138,7 +140,7 @@ class LocalNetworkOnlyInterceptorTest {
         val request = Request.Builder().url("http://93.184.216.34/v1/info").build()
 
         // when, then
-        invoking { client.newCall(request).execute() } shouldThrow
+        invoking { tested.newCall(request).execute() } shouldThrow
             UnknownHostException::class withMessage
             "93.184.216.34 is not on the local network, and this client only sends photos " +
             "to local receivers"
@@ -150,7 +152,7 @@ class LocalNetworkOnlyInterceptorTest {
         val request = Request.Builder().url("http://[2606:2800:220:1::1]/v1/info").build()
 
         // when, then
-        invoking { client.newCall(request).execute() } shouldThrow UnknownHostException::class
+        invoking { tested.newCall(request).execute() } shouldThrow UnknownHostException::class
     }
 
     @Test
@@ -159,6 +161,55 @@ class LocalNetworkOnlyInterceptorTest {
         val request = Request.Builder().url("http://receiver.invalid/v1/info").build()
 
         // when, then
-        invoking { client.newCall(request).execute() } shouldThrow UnknownHostException::class
+        invoking { tested.newCall(request).execute() } shouldThrow UnknownHostException::class
+    }
+
+    /**
+     * A redirect is the one way an upload could reach a public address: OkHttp follows one
+     * below the application interceptor, so the guard would never judge the new host. The
+     * body must stay on this machine, which means the hop is refused rather than inspected.
+     */
+    @Test
+    fun `given a redirect to a public literal when uploading then the body is not re-sent`() {
+        // given
+        server.enqueue(
+            MockResponse(
+                code = 307,
+                headers = headersOf("Location", "http://93.184.216.34/v1/steal"),
+            ),
+        )
+        val upload = Request.Builder()
+            .url(server.url("/v1/transfers/t-1/files/file-1"))
+            .put("photo-bytes".toRequestBody())
+            .build()
+
+        // when
+        val response = tested.newCall(upload).execute()
+
+        // then
+        response.code `should be equal to` 307
+        server.requestCount `should be equal to` 1
+    }
+
+    @Test
+    fun `given a redirect to a local address when uploading then it is still not followed`() {
+        // given
+        server.enqueue(
+            MockResponse(
+                code = 308,
+                headers = headersOf("Location", server.url("/v1/elsewhere").toString()),
+            ),
+        )
+        val upload = Request.Builder()
+            .url(server.url("/v1/transfers/t-1/files/file-1"))
+            .put("photo-bytes".toRequestBody())
+            .build()
+
+        // when
+        val response = tested.newCall(upload).execute()
+
+        // then
+        response.code `should be equal to` 308
+        server.requestCount `should be equal to` 1
     }
 }

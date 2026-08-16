@@ -16,7 +16,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class DefaultResolveSelectedPhotosTest {
+internal class DefaultResolveSelectedPhotosTest {
 
     val firstUri = mock<Uri>()
 
@@ -27,7 +27,7 @@ class DefaultResolveSelectedPhotosTest {
         on { resolve(secondUri) } doReturn selectedFile(secondUri, "b.jpg")
     }
 
-    internal val tested = DefaultResolveSelectedPhotos(
+    val tested = DefaultResolveSelectedPhotos(
         metadataSource = metadataSource,
         dispatchers = UnconfinedTestDispatcher().let {
             Dispatchers(main = it, io = it, default = it)

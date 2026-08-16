@@ -33,6 +33,9 @@ internal class LocalNetworkOnlyDns(private val delegate: Dns = Dns.SYSTEM) : Dns
  * [LocalNetworkOnlyDns] cannot cover these: OkHttp does not resolve a host that is already
  * an address, so its `Dns` is never consulted. Receivers are reached by literal far more
  * often than by name, since addresses come from Bonjour or are typed in by hand.
+ *
+ * Where this is installed decides what it covers, so [LocalReceiverHttpClient] owns that
+ * decision: an application interceptor is judged once per call and never sees a redirect.
  */
 internal class LocalNetworkOnlyInterceptor : Interceptor {
 

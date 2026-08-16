@@ -18,13 +18,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class AndroidPairingLocalStoreTest {
+internal class AndroidPairingLocalStoreTest {
 
     val context = ApplicationProvider.getApplicationContext<Context>()
 
     val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
-    internal val tested = AndroidPairingLocalStore(
+    val tested = AndroidPairingLocalStore(
         preferences = preferences,
         dispatchers = Dispatchers(main = Unconfined, io = Unconfined, default = Unconfined),
     )

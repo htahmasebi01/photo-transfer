@@ -22,7 +22,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HttpPairingGatewayTest {
+internal class HttpPairingGatewayTest {
 
     val server = MockWebServer()
 

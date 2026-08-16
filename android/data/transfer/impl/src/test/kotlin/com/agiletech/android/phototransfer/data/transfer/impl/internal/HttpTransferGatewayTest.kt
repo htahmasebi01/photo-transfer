@@ -34,7 +34,7 @@ import org.mockito.kotlin.mock
 
 /** Exercises the wire protocol documented in docs/protocol.md against a local server. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class HttpTransferGatewayTest {
+internal class HttpTransferGatewayTest {
 
     val server = MockWebServer()
 
@@ -312,11 +312,11 @@ class HttpTransferGatewayTest {
         size = size,
     )
 
-    private class FakeMediaByteSource(private val bytes: ByteArray) : MediaByteSource {
+    class FakeMediaByteSource(private val bytes: ByteArray) : MediaByteSource {
         override fun openStream(uri: Uri): InputStream = ByteArrayInputStream(bytes)
     }
 
-    private class FakeRequestSigner : RequestSigner {
+    class FakeRequestSigner : RequestSigner {
 
         var paired = true
         var receiverIsProven = true

@@ -61,7 +61,7 @@ receiver. Both are `api`-only edges, so neither wires up another layer's impleme
 | `:data:pairing:impl` | `HttpPairingGateway`, keystore-backed secret store, HMAC signing |
 | `:core:model` | `ReceiverDevice`, `SelectedFile`, `PhotoTransferProtocol` |
 | `:core:coroutines` | `Dispatchers`, `@ApplicationScope` |
-| `:core:network` | The shared `OkHttpClient` and `Json` bindings |
+| `:core:network` | The shared `OkHttpClient` and `Json` bindings, and the local-network-only rule |
 
 ## Rules
 
@@ -131,7 +131,7 @@ Each `impl` module tests its own behavior against fakes of the `api` it consumes
 | Module | Test |
 |---|---|
 | `:data:media:impl` | `ContentResolverMediaSourceTest`: metadata fallbacks, stream errors |
-| `:core:network` | `LocalAddressesTest`, `LocalNetworkOnlyDnsTest`, and `LocalNetworkOnlyInterceptorTest`: which hosts may be reached without TLS, by name and by literal |
+| `:core:network` | `LocalAddressesTest`, `LocalNetworkOnlyDnsTest`, and `LocalReceiverHttpClientTest`: which hosts may be reached without TLS, by name and by literal, and that a redirect cannot carry an upload off the local network |
 | `:data:pairing:impl` | `CanonicalRequestTest`: the shared signing and receiver-proof vectors. `HmacRequestSignerTest`: header contents, fresh nonces, unpaired receivers, and proof verification. `HttpPairingGatewayTest`: status mapping against `MockWebServer` |
 | `:data:transfer:impl` | `HttpTransferGatewayTest`: the wire protocol against `MockWebServer`, plus signing, receiver verification, and `401` handling |
 | `:domain:discovery:impl` | `DefaultObserveReceiversTest`: found/lost aggregation |

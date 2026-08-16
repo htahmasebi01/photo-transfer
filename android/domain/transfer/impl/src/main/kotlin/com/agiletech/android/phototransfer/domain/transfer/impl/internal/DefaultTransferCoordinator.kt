@@ -3,10 +3,14 @@ package com.agiletech.android.phototransfer.domain.transfer.impl.internal
 import com.agiletech.android.phototransfer.core.coroutines.scopes.ApplicationScope
 import com.agiletech.android.phototransfer.core.model.ReceiverDevice
 import com.agiletech.android.phototransfer.core.model.SelectedFile
+import com.agiletech.android.phototransfer.data.transfer.NotPairedException
+import com.agiletech.android.phototransfer.data.transfer.ReceiverNotVerifiedException
 import com.agiletech.android.phototransfer.data.transfer.TransferGateway
 import com.agiletech.android.phototransfer.data.transfer.TransferHandle
+import com.agiletech.android.phototransfer.domain.pairing.IsReceiverPaired
 import com.agiletech.android.phototransfer.domain.transfer.TransferCoordinator
 import com.agiletech.android.phototransfer.domain.transfer.TransferState
+import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +26,7 @@ import kotlinx.coroutines.launch
  */
 internal class DefaultTransferCoordinator @Inject constructor(
     private val gateway: TransferGateway,
+    private val isReceiverPaired: IsReceiverPaired,
     @ApplicationScope private val scope: CoroutineScope,
 ) : TransferCoordinator {
 
@@ -45,8 +50,18 @@ internal class DefaultTransferCoordinator @Inject constructor(
     private suspend fun runTransfer(receiver: ReceiverDevice, files: List<SelectedFile>) {
         val totalBytes = files.sumOf { it.size ?: 0L }
         try {
+            val identified = identify(receiver)
+            if (!isReceiverPaired(identified)) {
+                _state.value = TransferState.PairingRequired(identified)
+                return
+            }
+
+            // Before any bytes, including the manifest: a receiverId is public, so being
+            // paired with one proves nothing about whatever is answering on this address.
+            gateway.verifyReceiver(identified)
+
             _state.value = TransferState.Transferring(
-                receiver = receiver,
+                receiver = identified,
                 completedBytes = 0,
                 totalBytes = totalBytes,
                 currentFileName = files.first().displayName,
@@ -54,20 +69,37 @@ internal class DefaultTransferCoordinator @Inject constructor(
                 totalFiles = files.size,
             )
 
-            val handle = gateway.createTransfer(receiver, files)
-            uploadAll(receiver, handle, totalBytes)
-            gateway.completeTransfer(receiver, handle)
+            val handle = gateway.createTransfer(identified, files)
+            uploadAll(identified, handle, totalBytes)
+            gateway.completeTransfer(identified, handle)
 
             _state.value = TransferState.Completed(transferredFiles = handle.uploads.size)
         } catch (cancellation: CancellationException) {
             throw cancellation
-        } catch (error: Exception) {
+        } catch (unverified: ReceiverNotVerifiedException) {
+            _state.value = TransferState.ReceiverUnverified(receiver)
+        } catch (notPaired: NotPairedException) {
+            _state.value = receiver.receiverId
+                ?.let { TransferState.PairingRequired(receiver) }
+                ?: TransferState.Failed(
+                    reason = notPaired.message ?: "Not paired with this receiver",
+                    retryable = false,
+                )
+        } catch (failure: IOException) {
             _state.value = TransferState.Failed(
-                reason = error.message ?: "Transfer failed",
+                reason = failure.message ?: "Transfer failed",
                 retryable = true,
             )
         }
     }
+
+    /** A manually entered address has no receiver id yet, so ask the receiver for it. */
+    private suspend fun identify(receiver: ReceiverDevice): ReceiverDevice =
+        if (receiver.receiverId != null) {
+            receiver
+        } else {
+            receiver.copy(receiverId = gateway.fetchReceiverInfo(receiver).receiverId)
+        }
 
     private suspend fun uploadAll(
         receiver: ReceiverDevice,

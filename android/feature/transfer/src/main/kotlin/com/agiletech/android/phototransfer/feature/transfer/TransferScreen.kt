@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.agiletech.android.phototransfer.core.model.ReceiverDevice
@@ -45,6 +47,9 @@ fun TransferScreen(viewModel: TransferViewModel) {
     val selectedFiles by viewModel.selectedFiles.collectAsStateWithLifecycle()
     val devices by viewModel.devices.collectAsStateWithLifecycle()
     val discoveryError by viewModel.discoveryError.collectAsStateWithLifecycle()
+    val pairingError by viewModel.pairingError.collectAsStateWithLifecycle()
+    val isPairing by viewModel.isPairing.collectAsStateWithLifecycle()
+    val replacedPairing by viewModel.replacedPairing.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -63,6 +68,21 @@ fun TransferScreen(viewModel: TransferViewModel) {
                 onPhotosSelected = viewModel::onPhotosSelected,
                 onSend = viewModel::send,
                 onSendManual = viewModel::sendToManualAddress,
+            )
+            is TransferState.PairingRequired -> PairingContent(
+                state = state,
+                pairingError = pairingError,
+                isPairing = isPairing,
+                replacedPairing = replacedPairing,
+                onPair = viewModel::pair,
+                onConfirmReplacement = viewModel::confirmPairingReplacement,
+                onCancelReplacement = viewModel::cancelPairingReplacement,
+                onCancel = viewModel::resetTransfer,
+            )
+            is TransferState.ReceiverUnverified -> ReceiverUnverifiedContent(
+                state = state,
+                onForget = viewModel::unpair,
+                onDismiss = viewModel::resetTransfer,
             )
             is TransferState.Transferring -> TransferringContent(state)
             is TransferState.Completed -> CompletedContent(
@@ -238,6 +258,143 @@ private fun ManualAddressEntry(
 }
 
 @Composable
+private fun PairingContent(
+    state: TransferState.PairingRequired,
+    pairingError: String?,
+    isPairing: Boolean,
+    replacedPairing: String?,
+    onPair: (ReceiverDevice, String) -> Unit,
+    onConfirmReplacement: (ReceiverDevice, String) -> Unit,
+    onCancelReplacement: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    var code by rememberSaveable { mutableStateOf("") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Pair with ${state.receiver.name}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "On your Mac, open MacPhotoTransferPro and click \"Pair a Device\". " +
+                "Enter the code it shows, then approve this phone on the Mac.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        // Only the real Mac can show this prompt, so its absence is the one signal a user has
+        // that something else answered.
+        Text(
+            "Your Mac should ask you to approve this phone. If it stays on the code screen, " +
+                "cancel: something else on the network answered.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        OutlinedTextField(
+            value = code,
+            onValueChange = { entered -> code = entered.filter(Char::isDigit).take(PAIRING_CODE_LENGTH) },
+            label = { Text("Pairing code") },
+            singleLine = true,
+            enabled = !isPairing,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        )
+
+        if (pairingError != null) {
+            Text(
+                pairingError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        if (isPairing) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.width(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Waiting for approval on your Mac…", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        if (replacedPairing != null) {
+            ReplacePairingPrompt(
+                receiverName = replacedPairing,
+                onConfirm = { onConfirmReplacement(state.receiver, code) },
+                onCancel = onCancelReplacement,
+            )
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onPair(state.receiver, code) },
+                    enabled = !isPairing && code.length == PAIRING_CODE_LENGTH,
+                ) {
+                    Text("Pair and send")
+                }
+                OutlinedButton(onClick = onCancel, enabled = !isPairing) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReplacePairingPrompt(
+    receiverName: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "Replace the pairing with $receiverName?",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.error,
+        )
+        Text(
+            "This phone is already paired with $receiverName. Pairing again replaces those " +
+                "credentials. Expect this only if you reset the app on your Mac.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onConfirm) {
+                Text("Replace")
+            }
+            OutlinedButton(onClick = onCancel) {
+                Text("Keep existing")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceiverUnverifiedContent(
+    state: TransferState.ReceiverUnverified,
+    onForget: (ReceiverDevice) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            "Could not verify this Mac",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
+        Text(
+            "${state.receiver.name} answered at ${state.receiver.host}, but could not prove " +
+                "it is the Mac you paired with. No photos were sent.",
+        )
+        Text(
+            "Another device on this network may be impersonating it. If you have set up a new " +
+                "Mac, forget the old pairing and pair again.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+            OutlinedButton(onClick = { onForget(state.receiver) }) {
+                Text("Forget pairing")
+            }
+        }
+    }
+}
+
+@Composable
 private fun TransferringContent(state: TransferState.Transferring) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Sending to ${state.receiver.name}", style = MaterialTheme.typography.titleMedium)
@@ -305,3 +462,4 @@ private fun FailedContent(
 }
 
 private const val BYTES_PER_KB = 1024
+private const val PAIRING_CODE_LENGTH = 6

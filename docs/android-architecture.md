@@ -27,8 +27,13 @@ Android API; every other module is an Android library.
                                   ┌──────────────────────┐
                                   │ :core:model          │
                                   │ :core:coroutines     │
+                                  │ :core:network        │
                                   └──────────────────────┘
 ```
+
+`:data:transfer:impl` also depends on `:data:pairing:api` so it can sign requests, and
+`:domain:transfer:impl` on `:domain:pairing:api` so it can refuse to send to an unpaired
+receiver. Both are `api`-only edges, so neither wires up another layer's implementation.
 
 `:domain:*:impl` depends on `:data:*:api`, never on `:data:*:impl`.
 
@@ -50,8 +55,13 @@ Android API; every other module is an Android library.
 | `:data:discovery:impl` | `NsdManager` discovery and serialized service resolution |
 | `:data:media:api` | `MediaMetadataSource`, `MediaByteSource` |
 | `:data:media:impl` | `ContentResolver`-backed metadata and byte access |
-| `:core:model` | `ReceiverDevice`, `SelectedFile` |
+| `:domain:pairing:api` | `PairReceiver`, `PairingResult`, `IsReceiverPaired`, `ForgetPairing` |
+| `:domain:pairing:impl` | Maps pairing outcomes to domain results; guards unidentified receivers |
+| `:data:pairing:api` | `PairingGateway`, `RequestSigner`, `PairedReceiverStore` |
+| `:data:pairing:impl` | `HttpPairingGateway`, keystore-backed secret store, HMAC signing |
+| `:core:model` | `ReceiverDevice`, `SelectedFile`, `PhotoTransferProtocol` |
 | `:core:coroutines` | `Dispatchers`, `@ApplicationScope` |
+| `:core:network` | The shared `OkHttpClient` and `Json` bindings |
 
 ## Rules
 
@@ -70,6 +80,12 @@ Android API; every other module is an Android library.
    are `internal` to `:data:transfer:impl`; `TransferGateway` speaks in
    `SelectedFile` and `ReceiverDevice`.
 6. **Features never depend on other features** or on any `impl`.
+7. **Key material never leaves its owning `impl`.** `RequestSigner` returns finished
+   headers rather than a secret, so `:data:transfer:impl` signs requests without
+   ever holding the pairing key.
+8. **Shared bindings live in a `core` module.** `OkHttpClient` and `Json` sit in
+   `:core:network` rather than in one data module that others quietly rely on,
+   which would let `:data:pairing:impl` break when `:data:transfer:impl` is absent.
 
 ## Why `data` also splits into `api`/`impl`
 
@@ -115,7 +131,27 @@ Each `impl` module tests its own behavior against fakes of the `api` it consumes
 | Module | Test |
 |---|---|
 | `:data:media:impl` | `ContentResolverMediaSourceTest`: metadata fallbacks, stream errors |
-| `:data:transfer:impl` | `HttpTransferGatewayTest`: the wire protocol against `MockWebServer` |
+| `:core:network` | `LocalAddressesTest`, `LocalNetworkOnlyDnsTest`, and `LocalNetworkOnlyInterceptorTest`: which hosts may be reached without TLS, by name and by literal |
+| `:data:pairing:impl` | `CanonicalRequestTest`: the shared signing and receiver-proof vectors. `HmacRequestSignerTest`: header contents, fresh nonces, unpaired receivers, and proof verification. `HttpPairingGatewayTest`: status mapping against `MockWebServer` |
+| `:data:transfer:impl` | `HttpTransferGatewayTest`: the wire protocol against `MockWebServer`, plus signing, receiver verification, and `401` handling |
 | `:domain:discovery:impl` | `DefaultObserveReceiversTest`: found/lost aggregation |
 | `:domain:media:impl` | `DefaultResolveSelectedPhotosTest`: dedupe and ordering |
-| `:domain:transfer:impl` | `DefaultTransferCoordinatorTest`: state machine, cancel and replace |
+| `:domain:pairing:impl` | `DefaultPairReceiverTest`: outcome mapping, unidentified receivers |
+| `:domain:transfer:impl` | `DefaultTransferCoordinatorTest`: state machine, cancel and replace, pairing gate, and that an unproven receiver gets no photos |
+| `:feature:transfer` | `TransferViewModelTest`: that replacing a pairing is asked about before the code is spent, and how each pairing outcome is worded |
+
+Tests follow the repository's `docs/testing-guidelines.md`: `given … when … then …` names,
+`// given` / `// when` / `// then` sections, Kluent assertions, Mockito Kotlin mocks, and the
+object under test named `tested`.
+
+`CanonicalRequestTest` and the receiver's `RequestSignatureTests` assert the same two
+vectors: the request signature and the receiver's proof. If either platform changes
+either string, both builds fail instead of the failure surfacing at runtime as pairing
+that stops working or a receiver that looks like an impostor.
+
+The keystore has no JVM implementation, so `AndroidPairingLocalStore` is the one class
+unit tests cannot reach. It has an instrumented test instead:
+
+```bash
+./gradlew :data:pairing:impl:connectedDebugAndroidTest
+```

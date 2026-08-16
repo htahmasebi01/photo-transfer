@@ -11,12 +11,14 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 const val COMPILE_SDK = 37
 const val MIN_SDK = 29
 const val TARGET_SDK = 36
+const val INSTRUMENTATION_RUNNER = "androidx.test.runner.AndroidJUnitRunner"
 
 fun Project.configureAndroid(commonExtension: CommonExtension) {
     commonExtension.apply {
         compileSdk = COMPILE_SDK
 
         defaultConfig.minSdk = MIN_SDK
+        defaultConfig.testInstrumentationRunner = INSTRUMENTATION_RUNNER
 
         compileOptions.apply {
             sourceCompatibility = JavaVersion.VERSION_17

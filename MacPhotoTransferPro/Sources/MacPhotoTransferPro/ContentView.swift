@@ -9,11 +9,22 @@ struct ContentView: View {
             header
             folderRow
             controlRow
+            pairingSection
             Divider()
             receivedList
         }
         .padding(20)
-        .frame(minWidth: 440, minHeight: 380)
+        .frame(minWidth: 440, minHeight: 460)
+        .alert(
+            "Allow \(viewModel.pendingApproval?.deviceName ?? "this device") to send photos?",
+            isPresented: .constant(viewModel.pendingApproval != nil),
+            presenting: viewModel.pendingApproval
+        ) { _ in
+            Button("Allow") { viewModel.respondToApproval(approved: true) }
+            Button("Don't Allow", role: .cancel) { viewModel.respondToApproval(approved: false) }
+        } message: { _ in
+            Text("It will be able to send photos to this Mac until you remove it.")
+        }
     }
 
     private var header: some View {
@@ -53,6 +64,58 @@ struct ContentView: View {
             }
             Spacer()
         }
+    }
+
+    private var pairingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Paired devices")
+                    .font(.headline)
+                Spacer()
+                if viewModel.pairingCode == nil {
+                    Button("Pair a Device") { viewModel.beginPairing() }
+                        .disabled(!viewModel.isRunning)
+                } else {
+                    Button("Cancel Pairing") { viewModel.cancelPairing() }
+                }
+            }
+
+            if let code = viewModel.pairingCode {
+                pairingCodeCard(code)
+            }
+
+            if viewModel.pairedDevices.isEmpty {
+                Text("No devices paired yet. Only paired devices can send photos.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(viewModel.pairedDevices) { device in
+                    HStack {
+                        Image(systemName: "iphone")
+                        Text(device.deviceName)
+                        Spacer()
+                        Button("Remove") { viewModel.revoke(device) }
+                            .buttonStyle(.borderless)
+                    }
+                }
+            }
+        }
+    }
+
+    private func pairingCodeCard(_ code: PairingCode) -> some View {
+        HStack(spacing: 12) {
+            Text(code.digits)
+                .font(.system(.largeTitle, design: .monospaced).bold())
+                .tracking(6)
+            VStack(alignment: .leading) {
+                Text("Enter this code on your phone")
+                Text("Expires \(code.expiresAt, style: .relative)")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+        }
+        .padding(12)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var receivedList: some View {

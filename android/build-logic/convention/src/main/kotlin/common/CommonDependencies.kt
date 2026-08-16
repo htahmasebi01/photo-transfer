@@ -14,6 +14,7 @@ fun VersionCatalog.library(alias: String) = findLibrary(alias).get()
 fun Project.addUnitTestDependencies() {
     dependencies {
         "testImplementation"(libs.library("junit"))
+        "testImplementation"(libs.library("kluent"))
         "testImplementation"(libs.library("mockito-kotlin"))
         "testImplementation"(libs.library("coroutines-test"))
     }

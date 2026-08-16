@@ -21,6 +21,15 @@ android/.kotlin/
 *.apk
 *.aab
 
+# Signing material. Losing these means never being able to update an installed
+# app, and leaking them means anyone can publish as you. Keep them backed up
+# somewhere outside the repo.
+android/keystore.properties
+MacPhotoTransferPro/Tools/signing.env
+*.jks
+*.keystore
+*.p12
+
 # IDE
 .idea/
 *.iml

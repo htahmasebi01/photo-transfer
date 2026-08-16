@@ -6,9 +6,10 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.ByteArrayInputStream
 import java.io.IOException
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
+import org.amshove.kluent.invoking
+import org.amshove.kluent.`should be equal to`
+import org.amshove.kluent.`should be null`
+import org.amshove.kluent.shouldThrow
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -18,69 +19,85 @@ import org.mockito.kotlin.mock
 
 class ContentResolverMediaSourceTest {
 
-    private val uri = mock<Uri>()
+    val uri = mock<Uri>()
 
     @Test
-    fun `resolve maps display name size and media type`() {
+    fun `given a provider that reports everything when resolved then name, size and type are mapped`() {
+        // given
         val cursor = cursorReturning(name = "IMG_20260802.jpg", size = 4_837_912L)
-        val source = ContentResolverMediaSource(contentResolverReturning(cursor, "image/jpeg"))
+        val tested = ContentResolverMediaSource(contentResolverReturning(cursor, "image/jpeg"))
 
-        val result = source.resolve(uri)
+        // when
+        val result = tested.resolve(uri)
 
-        assertEquals("IMG_20260802.jpg", result.displayName)
-        assertEquals(4_837_912L, result.size)
-        assertEquals("image/jpeg", result.mediaType)
-        assertEquals(uri, result.uri)
+        // then
+        result.displayName `should be equal to` "IMG_20260802.jpg"
+        result.size `should be equal to` 4_837_912L
+        result.mediaType `should be equal to` "image/jpeg"
+        result.uri `should be equal to` uri
     }
 
     @Test
-    fun `resolve falls back when provider reports nothing`() {
-        val source = ContentResolverMediaSource(contentResolverReturning(cursor = null, mediaType = null))
+    fun `given a provider that reports nothing when resolved then defaults are used`() {
+        // given
+        val tested = ContentResolverMediaSource(
+            contentResolverReturning(cursor = null, mediaType = null),
+        )
 
-        val result = source.resolve(uri)
+        // when
+        val result = tested.resolve(uri)
 
-        assertEquals("photo", result.displayName)
-        assertNull(result.size)
-        assertEquals("application/octet-stream", result.mediaType)
+        // then
+        result.displayName `should be equal to` "photo"
+        result.size.`should be null`()
+        result.mediaType `should be equal to` "application/octet-stream"
     }
 
     @Test
-    fun `resolve handles missing size column`() {
+    fun `given no size column when resolved then the size is unknown`() {
+        // given
         val cursor = mock<Cursor> {
             on { moveToFirst() } doReturn true
             on { getColumnIndex(OpenableColumns.DISPLAY_NAME) } doReturn 0
             on { getColumnIndex(OpenableColumns.SIZE) } doReturn -1
             on { getString(0) } doReturn "a.png"
         }
-        val source = ContentResolverMediaSource(contentResolverReturning(cursor, "image/png"))
+        val tested = ContentResolverMediaSource(contentResolverReturning(cursor, "image/png"))
 
-        val result = source.resolve(uri)
+        // when
+        val result = tested.resolve(uri)
 
-        assertEquals("a.png", result.displayName)
-        assertNull(result.size)
+        // then
+        result.displayName `should be equal to` "a.png"
+        result.size.`should be null`()
     }
 
     @Test
-    fun `openStream returns the provider stream`() {
+    fun `given an openable uri when a stream is requested then the provider stream is returned`() {
+        // given
         val bytes = byteArrayOf(1, 2, 3)
         val contentResolver = mock<ContentResolver> {
             on { openInputStream(uri) } doReturn ByteArrayInputStream(bytes)
         }
-        val source = ContentResolverMediaSource(contentResolver)
+        val tested = ContentResolverMediaSource(contentResolver)
 
-        val result = source.openStream(uri).use { it.readBytes() }
+        // when
+        val result = tested.openStream(uri).use { it.readBytes() }
 
-        assertEquals(bytes.toList(), result.toList())
+        // then
+        result.toList() `should be equal to` bytes.toList()
     }
 
     @Test
-    fun `openStream fails when the provider cannot open the uri`() {
+    fun `given a uri the provider cannot open when a stream is requested then it fails`() {
+        // given
         val contentResolver = mock<ContentResolver> {
             on { openInputStream(uri) } doReturn null
         }
-        val source = ContentResolverMediaSource(contentResolver)
+        val tested = ContentResolverMediaSource(contentResolver)
 
-        assertThrows(IOException::class.java) { source.openStream(uri) }
+        // when, then
+        invoking { tested.openStream(uri) } shouldThrow IOException::class
     }
 
     private fun cursorReturning(name: String, size: Long): Cursor = mock {

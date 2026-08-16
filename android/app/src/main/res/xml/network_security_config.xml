@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The walking skeleton transfers over plain HTTP on the local network.
-     TLS with certificate pinning replaces this in the pairing iteration. -->
+<!-- Transfers still run over plain HTTP on the local network, so cleartext has to be
+     permitted. It cannot be scoped here: <domain> matches a hostname or one IP literal,
+     and the receiver's address is whatever DHCP handed it, so there is no way to express
+     "private ranges only". LocalNetworkOnlyInterceptor enforces that at the client
+     instead, and it applies to every request rather than only the ones listed here. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

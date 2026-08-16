@@ -1,17 +1,18 @@
 package com.agiletech.android.phototransfer.data.transfer.impl.internal.protocol
 
+import com.agiletech.android.phototransfer.core.model.PhotoTransferProtocol
 import kotlinx.serialization.Serializable
 
-internal const val PROTOCOL_VERSION = 1
+internal const val PROTOCOL_VERSION = PhotoTransferProtocol.VERSION
 
 @Serializable
-internal data class TransferManifest(
+internal data class TransferManifestRequestParamsDto(
     val protocolVersion: Int,
-    val files: List<ManifestFile>,
+    val files: List<ManifestFileDto>,
 )
 
 @Serializable
-internal data class ManifestFile(
+internal data class ManifestFileDto(
     val id: String,
     val name: String,
     val mediaType: String,
@@ -19,17 +20,18 @@ internal data class ManifestFile(
 )
 
 @Serializable
-internal data class InfoResponse(
+internal data class InfoDto(
     val protocolVersion: Int,
+    val receiverId: String,
     val receiverName: String,
 )
 
 @Serializable
-internal data class TransferCreatedResponse(
+internal data class TransferCreatedDto(
     val transferId: String,
 )
 
 @Serializable
-internal data class CompleteResponse(
+internal data class CompleteDto(
     val receivedFiles: Int,
 )

@@ -11,7 +11,9 @@ final class BonjourAdvertiser {
 
     private var service: NetService?
 
-    func start(name: String, port: UInt16) {
+    /// Publishing `receiverId` in the TXT record lets a sender pick the right pairing
+    /// straight from discovery, with no unauthenticated round trip to `/v1/info`.
+    func start(name: String, port: UInt16, receiverId: String) {
         stop()
         let service = NetService(
             domain: "local.",
@@ -19,6 +21,10 @@ final class BonjourAdvertiser {
             name: name,
             port: Int32(port)
         )
+        service.setTXTRecord(NetService.data(fromTXTRecord: [
+            "receiverId": Data(receiverId.utf8),
+            "protocolVersion": Data(String(TransferProtocol.version).utf8)
+        ]))
         service.publish()
         self.service = service
     }

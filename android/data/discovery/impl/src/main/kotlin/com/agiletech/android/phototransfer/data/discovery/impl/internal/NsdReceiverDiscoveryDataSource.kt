@@ -57,7 +57,11 @@ internal class NsdReceiverDiscoveryDataSource @Inject constructor(
 
         awaitClose {
             resolveJob.cancel()
-            runCatching { nsdManager.stopServiceDiscovery(discoveryListener) }
+            try {
+                nsdManager.stopServiceDiscovery(discoveryListener)
+            } catch (notDiscovering: IllegalArgumentException) {
+                // Discovery had already failed to start, so there is nothing to stop.
+            }
         }
     }
 
@@ -75,6 +79,7 @@ internal class NsdReceiverDiscoveryDataSource @Inject constructor(
                                 name = resolved.serviceName,
                                 host = it,
                                 port = resolved.port,
+                                receiverId = resolved.receiverId(),
                             )
                         }
                         if (continuation.isActive) continuation.resume(device)
@@ -86,4 +91,11 @@ internal class NsdReceiverDiscoveryDataSource @Inject constructor(
                 },
             )
         }
+
+    private fun NsdServiceInfo.receiverId(): String? =
+        attributes[RECEIVER_ID_ATTRIBUTE]?.toString(Charsets.UTF_8)?.takeIf(String::isNotBlank)
+
+    private companion object {
+        const val RECEIVER_ID_ATTRIBUTE = "receiverId"
+    }
 }

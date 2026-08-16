@@ -11,6 +11,15 @@ interface TransferGateway {
 
     suspend fun fetchReceiverInfo(receiver: ReceiverDevice): ReceiverInfo
 
+    /**
+     * Checks that [receiver] holds the secret this device paired with, before anything
+     * is sent to it.
+     *
+     * @throws ReceiverNotVerifiedException when it cannot prove that, which means the
+     * address is answering for a `receiverId` it does not own.
+     */
+    suspend fun verifyReceiver(receiver: ReceiverDevice)
+
     /** Registers [files] with the receiver and returns the uploads to perform. */
     suspend fun createTransfer(receiver: ReceiverDevice, files: List<SelectedFile>): TransferHandle
 
@@ -27,8 +36,20 @@ interface TransferGateway {
 
 data class ReceiverInfo(
     val protocolVersion: Int,
+    val receiverId: String,
     val name: String,
 )
+
+/** Raised when the receiver refuses a request because this device is not paired with it. */
+class NotPairedException(message: String) : Exception(message)
+
+/**
+ * Raised when whatever answered could not prove it is the receiver this device paired with.
+ *
+ * Treat this as an impersonation attempt rather than a transient error: a `receiverId` is
+ * broadcast in cleartext, so anything on the network can claim one it does not own.
+ */
+class ReceiverNotVerifiedException(message: String) : Exception(message)
 
 /** An accepted transfer session, with one [PendingUpload] per registered file. */
 data class TransferHandle(

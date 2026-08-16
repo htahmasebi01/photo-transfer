@@ -7,7 +7,8 @@ import com.agiletech.android.phototransfer.data.media.MediaMetadataSource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
+import org.amshove.kluent.`should be empty`
+import org.amshove.kluent.`should be equal to`
 import org.junit.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -17,37 +18,48 @@ import org.mockito.kotlin.verify
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultResolveSelectedPhotosTest {
 
-    private val firstUri = mock<Uri>()
-    private val secondUri = mock<Uri>()
+    val firstUri = mock<Uri>()
 
-    private val metadataSource = mock<MediaMetadataSource> {
+    val secondUri = mock<Uri>()
+
+    val metadataSource = mock<MediaMetadataSource> {
         on { resolve(firstUri) } doReturn selectedFile(firstUri, "a.jpg")
         on { resolve(secondUri) } doReturn selectedFile(secondUri, "b.jpg")
     }
 
-    private val resolveSelectedPhotos = DefaultResolveSelectedPhotos(
+    internal val tested = DefaultResolveSelectedPhotos(
         metadataSource = metadataSource,
-        dispatchers = UnconfinedTestDispatcher().let { Dispatchers(main = it, io = it, default = it) },
+        dispatchers = UnconfinedTestDispatcher().let {
+            Dispatchers(main = it, io = it, default = it)
+        },
     )
 
     @Test
-    fun `resolves every picked photo in order`() = runTest {
-        val result = resolveSelectedPhotos(listOf(firstUri, secondUri))
+    fun `given two picked photos when resolved then both are returned in order`() = runTest {
+        // given, when
+        val result = tested(listOf(firstUri, secondUri))
 
-        assertEquals(listOf("a.jpg", "b.jpg"), result.map { it.displayName })
+        // then
+        result.map { it.displayName } `should be equal to` listOf("a.jpg", "b.jpg")
     }
 
     @Test
-    fun `picking the same photo twice resolves it once`() = runTest {
-        val result = resolveSelectedPhotos(listOf(firstUri, secondUri, firstUri))
+    fun `given the same photo picked twice when resolved then it is resolved once`() = runTest {
+        // given, when
+        val result = tested(listOf(firstUri, secondUri, firstUri))
 
-        assertEquals(listOf("a.jpg", "b.jpg"), result.map { it.displayName })
+        // then
+        result.map { it.displayName } `should be equal to` listOf("a.jpg", "b.jpg")
         verify(metadataSource, times(1)).resolve(firstUri)
     }
 
     @Test
-    fun `empty selection resolves to nothing`() = runTest {
-        assertEquals(emptyList<SelectedFile>(), resolveSelectedPhotos(emptyList()))
+    fun `given an empty selection when resolved then nothing is returned`() = runTest {
+        // given, when
+        val result = tested(emptyList())
+
+        // then
+        result.`should be empty`()
     }
 
     private fun selectedFile(uri: Uri, name: String) = SelectedFile(

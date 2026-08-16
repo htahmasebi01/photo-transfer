@@ -13,6 +13,7 @@ dependencies {
     implementation(projects.core.model)
     implementation(projects.domain.discovery.api)
     implementation(projects.domain.media.api)
+    implementation(projects.domain.pairing.api)
     implementation(projects.domain.transfer.api)
 
     implementation(libs.androidx.activity.compose)

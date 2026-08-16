@@ -7,66 +7,81 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
+import org.amshove.kluent.`should be empty`
+import org.amshove.kluent.`should be equal to`
 import org.junit.Test
 
 class DefaultObserveReceiversTest {
 
-    private val mac = ReceiverDevice(name = "Mac", host = "10.0.0.2", port = 8080)
-    private val mini = ReceiverDevice(name = "Mini", host = "10.0.0.3", port = 9090)
+    val mac = ReceiverDevice(name = "Mac", host = "10.0.0.2", port = 8080)
+
+    val mini = ReceiverDevice(name = "Mini", host = "10.0.0.3", port = 9090)
 
     @Test
-    fun `starts empty so the UI can show a searching state`() = runTest {
+    fun `given no discovery events when observed then the first emission is empty`() = runTest {
+        // given, when
         val emissions = observe().toList()
 
-        assertEquals(emptyList<ReceiverDevice>(), emissions.first())
+        // then
+        emissions.first().`should be empty`()
     }
 
     @Test
-    fun `accumulates found receivers in discovery order`() = runTest {
+    fun `given two receivers found when observed then they accumulate in discovery order`() = runTest {
+        // given, when
         val emissions = observe(DiscoveryEvent.Found(mac), DiscoveryEvent.Found(mini)).toList()
 
-        assertEquals(listOf(emptyList(), listOf(mac), listOf(mac, mini)), emissions)
+        // then
+        emissions `should be equal to` listOf(emptyList(), listOf(mac), listOf(mac, mini))
     }
 
     @Test
-    fun `drops receivers that disappear`() = runTest {
+    fun `given a receiver that disappears when observed then it is dropped`() = runTest {
+        // given, when
         val emissions = observe(
             DiscoveryEvent.Found(mac),
             DiscoveryEvent.Found(mini),
             DiscoveryEvent.Lost(mac.name),
         ).toList()
 
-        assertEquals(listOf(mini), emissions.last())
+        // then
+        emissions.last() `should be equal to` listOf(mini)
     }
 
     @Test
-    fun `rediscovering the same receiver does not duplicate it`() = runTest {
+    fun `given the same receiver found twice when observed then it is not duplicated`() = runTest {
+        // given, when
         val emissions = observe(DiscoveryEvent.Found(mac), DiscoveryEvent.Found(mac)).toList()
 
-        assertEquals(listOf(emptyList(), listOf(mac)), emissions)
+        // then
+        emissions `should be equal to` listOf(emptyList(), listOf(mac))
     }
 
     @Test
-    fun `a receiver that reappears on a new port replaces the stale address`() = runTest {
+    fun `given a receiver that reappears on a new port when observed then the stale address goes`() = runTest {
+        // given
         val movedMac = mac.copy(port = 5555)
 
+        // when
         val emissions = observe(DiscoveryEvent.Found(mac), DiscoveryEvent.Found(movedMac)).toList()
 
-        assertEquals(listOf(movedMac), emissions.last())
+        // then
+        emissions.last() `should be equal to` listOf(movedMac)
     }
 
     @Test
-    fun `losing an unknown receiver changes nothing`() = runTest {
+    fun `given an unknown receiver is lost when observed then nothing changes`() = runTest {
+        // given, when
         val emissions = observe(DiscoveryEvent.Found(mac), DiscoveryEvent.Lost("Ghost")).toList()
 
-        assertEquals(listOf(emptyList(), listOf(mac)), emissions)
+        // then
+        emissions `should be equal to` listOf(emptyList(), listOf(mac))
     }
 
     private fun observe(vararg events: DiscoveryEvent): Flow<List<ReceiverDevice>> =
         DefaultObserveReceivers(FakeReceiverDiscoveryDataSource(events.toList())).invoke()
 
-    private class FakeReceiverDiscoveryDataSource(
+    class FakeReceiverDiscoveryDataSource(
         private val events: List<DiscoveryEvent>,
     ) : ReceiverDiscoveryDataSource {
         override fun discover(): Flow<DiscoveryEvent> = events.asFlow()

@@ -13,7 +13,9 @@ dependencies {
 
     implementation(projects.core.coroutines)
     implementation(projects.core.model)
+    implementation(projects.core.network)
     implementation(projects.data.media.api)
+    implementation(projects.data.pairing.api)
 
     implementation(libs.coroutines.core)
     implementation(libs.javax.inject)
@@ -21,5 +23,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okio)
 
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
 }
